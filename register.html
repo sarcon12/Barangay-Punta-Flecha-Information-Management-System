@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay IMS - Register</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="animate-fade-in">
+
+    <div class="auth-container">
+        <div class="card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="font-weight: 700; color: var(--text-main);">Create Account</h2>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">Join our community management system.</p>
+            </div>
+
+            <div class="input-group">
+                <label for="fullname">Full Name</label>
+                <input id="fullname" type="text" placeholder="Uzumaki Naruto">
+            </div>
+
+            <div class="input-group">
+                <label for="purok">Purok / Area</label>
+                <select id="purok">
+                    <option value="Purok 1">Purok 1</option>
+                    <option value="Purok 2">Purok 2</option>
+                    <option value="Purok 3">Purok 3</option>
+                    <option value="Purok 4">Purok 4</option>
+                    <option value="Purok 5">Purok 5</option>
+                    <option value="Purok 6">Purok 6</option>
+                    <option value="Purok 7">Purok 7</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input id="username" type="text" placeholder="Cyberxel">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="••••••••">
+            </div>
+
+            <button class="btn btn-primary" id="saveBtn" onclick="save()">
+                Register Account
+            </button>
+
+            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem;">
+                <span style="color: var(--text-muted);">Already have an account?</span>
+                <a href="index.html" style="color: var(--primary); font-weight: 600; text-decoration: none; margin-left: 0.25rem;">Back to Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+        async function save() {
+            const name = document.getElementById("fullname").value.trim();
+            const purok = document.getElementById("purok").value;
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!name || !username || !password) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving...";
+
+            const users = await apiGet("users");
+
+            if (users.find(x => x.username === username)) {
+                alert("This username is already taken. Please choose another.");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Register Account";
+                return;
+            }
+
+            users.push({
+                username: username,
+                password: password,
+                name: name,
+                purok: purok,
+                createdAt: new Date().toISOString()
+            });
+
+            const res = await apiPost("users", users);
+            
+            if (res.success) {
+                alert("Account created successfully!");
+                location.href = "index.html";
+            } else {
+                alert("Error connecting to server. Please ensure the server is running.");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Register Account";
+            }
+        }
+    </script>
+</body>
+</html>

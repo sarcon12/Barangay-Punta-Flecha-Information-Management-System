@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay IMS - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="animate-fade-in">
+
+    <div class="auth-container">
+        <div class="card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <img src="1.jpg" alt="Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid var(--primary);">
+                <h2 style="font-weight: 700; color: var(--text-main);">Barangay IMS</h2>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">Welcome back! Please login to your account.</p>
+            </div>
+
+            <div class="input-group">
+                <label for="role">Login As</label>
+                <select id="role">
+                    <option value="resident">Resident</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="user">Username</label>
+                <input id="user" type="text" placeholder="Enter your username">
+            </div>
+
+            <div class="input-group">
+                <label for="pass">Password</label>
+                <input id="pass" type="password" placeholder="••••••••">
+            </div>
+
+            <button class="btn btn-primary" id="loginBtn" onclick="login()">
+                Sign In
+            </button>
+
+            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem;">
+                <span style="color: var(--text-muted);">Don't have an account?</span>
+                <a href="register.html" style="color: var(--primary); font-weight: 600; text-decoration: none; margin-left: 0.25rem;">Create Account</a>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-outline" style="color: var(--danger); border-color: transparent;" onclick="exitApp()">
+                    Exit Application
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+        async function login() {
+            const role = document.getElementById("role").value;
+            const u = document.getElementById("user").value.trim();
+            const p = document.getElementById("pass").value.trim();
+
+            if (!u || !p) {
+                alert("Please enter both username and password.");
+                return;
+            }
+
+            const loginBtn = document.getElementById("loginBtn");
+            loginBtn.disabled = true;
+            loginBtn.innerText = "Verifying...";
+
+            if (role === "admin") {
+                if (u === "admin" && p === "1234") {
+                    localStorage.setItem("role", "admin");
+                    localStorage.removeItem("currentUser");
+                    location.href = "admin.html";
+                } else {
+                    alert("Invalid Admin Credentials");
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = "Sign In";
+                }
+                return;
+            }
+
+            const users = await apiGet("users");
+            const found = users.find(x => x.username === u && x.password === p);
+
+            if (found) {
+                const safeUser = {
+                    username: found.username,
+                    name: found.name || "Resident",
+                    purok: found.purok || "N/A"
+                };
+
+                localStorage.setItem("currentUser", JSON.stringify(safeUser));
+                localStorage.setItem("role", "resident");
+                location.href = "resident.html";
+            } else {
+                alert("Invalid Resident Credentials");
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Sign In";
+            }
+        }
+
+        function exitApp() {
+            if (confirm("Are you sure you want to exit?")) {
+                window.close();
+                location.href = "about:blank";
+            }
+        }
+
+        window.onload = () => {
+            const role = localStorage.getItem("role");
+            if (role === "admin") location.href = "admin.html";
+            else if (role === "resident") location.href = "resident.html";
+        };
+    </script>
+</body>
+</html>

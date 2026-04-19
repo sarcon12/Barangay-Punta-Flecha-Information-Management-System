@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay IMS - Resident Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="animate-fade-in">
+
+    <nav class="navbar">
+        <div class="nav-brand">🏠 Resident Portal</div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <span id="user-display" style="font-weight: 500; font-size: 0.875rem; color: var(--text-muted);"></span>
+            <button class="btn btn-outline" style="width: auto;" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header style="margin-bottom: 2rem;">
+            <h1 id="welcome-msg">Welcome!</h1>
+            <p style="color: var(--text-muted);">Manage your requests and stay updated with barangay announcements.</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="section">
+                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">📢 Announcements</h3>
+                <div id="ann-list"><p style="color: var(--text-muted); font-style: italic;">Loading announcements...</p></div>
+            </div>
+
+            <div class="section">
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;">Request Certificate</h3>
+                    <div class="input-group">
+                        <label>Select Certificate Type</label>
+                        <select id="cert-type">
+                            <option>Barangay Clearance</option>
+                            <option>Certificate of Indigency</option>
+                            <option>Certificate of Residency</option>
+                            <option>First Time Job Seeker</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="reqBtn" onclick="submitRequest()">Submit Request</button>
+                    
+                    <div style="margin-top: 2rem;">
+                        <h4 style="margin-bottom: 1rem;">My Recent Requests</h4>
+                        <div id="my-requests"><p style="color: var(--text-muted); font-size: 0.875rem;">No requests found.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (!currentUser || localStorage.getItem("role") !== "resident") location.href = "index.html";
+
+        document.getElementById('user-display').innerText = currentUser.name;
+        document.getElementById('welcome-msg').innerText = `Welcome, ${currentUser.name.split(' ')[0]}!`;
+
+        async function loadAnnouncements() {
+            const anns = await apiGet("ann");
+            const list = document.getElementById('ann-list');
+            if (anns.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No announcements yet.</p>';
+                return;
+            }
+            list.innerHTML = anns.map(a => `
+                <div class="card" style="margin-bottom: 1rem; padding: 1.25rem;">
+                    <p style="font-weight: 500; margin-bottom: 0.5rem;">${a.text}</p>
+                    <small style="color: var(--text-muted)">📅 ${a.date}</small>
+                </div>
+            `).join("");
+        }
+
+        async function submitRequest() {
+            const type = document.getElementById('cert-type').value;
+            const reqBtn = document.getElementById('reqBtn');
+            reqBtn.disabled = true;
+
+            const reqs = await apiGet("req");
+            reqs.unshift({
+                username: currentUser.username,
+                name: currentUser.name,
+                type: type,
+                date: new Date().toLocaleString(),
+                status: "Pending"
+            });
+
+            await apiPost("req", reqs);
+            alert("Request submitted successfully!");
+            reqBtn.disabled = false;
+            loadMyRequests();
+        }
+
+        async function loadMyRequests() {
+            const reqs = await apiGet("req");
+            const myData = reqs.filter(r => r.username === currentUser.username);
+            const list = document.getElementById('my-requests');
+
+            if (myData.length === 0) return;
+
+            list.innerHTML = myData.map(r => `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div><p style="font-weight: 600; font-size: 0.875rem;">${r.type}</p><small style="color: var(--text-muted)">${r.date}</small></div>
+                    <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
+                </div>
+            `).join("");
+        }
+
+        function logout() { localStorage.removeItem("currentUser"); localStorage.removeItem("role"); location.href = "index.html"; }
+
+        loadAnnouncements();
+        loadMyRequests();
+    </script>
+</body>
+</html>
